@@ -1,0 +1,90 @@
+name: Mossyfin / AAOS
+
+on:
+  push:
+    branches:
+      - mossyfin-aaos
+  workflow_dispatch:
+    inputs:
+      upload_to_play:
+        description: Upload the signed AAOS bundle to Google Play internal testing for this manual run
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mossyfin-aaos-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  APP_APPLICATION_ID: com.blazelink.mossyfin
+  AAOS_APPLICATION_ID: com.blazelink.mossyfin.aaos
+  APP_LABEL: Mossyfin
+  AAOS_APP_LABEL: Mossyfin
+  AAOS_BUNDLE_DIR: app/build/outputs/bundle/aaosProprietaryRelease
+
+jobs:
+  build-aaos:
+    name: Build AAOS bundle
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Java
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5.0.2
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Materialize signing keystore
+        shell: bash
+        run: |
+          test -n "${{ secrets.MOSSYFIN_KEYSTORE_BASE64 }}"
+          printf '%s' '${{ secrets.MOSSYFIN_KEYSTORE_BASE64 }}' | base64 --decode > "$RUNNER_TEMP/mossyfin-upload-key.jks"
+          echo "SIGNING_STORE_FILE=$RUNNER_TEMP/mossyfin-upload-key.jks" >> "$GITHUB_ENV"
+
+      - name: Build signed AAOS app bundle
+        run: |
+          ./gradlew bundleAaosProprietaryRelease --stacktrace \
+            -Papp.applicationId="${APP_APPLICATION_ID}" \
+            -Papp.aaosApplicationId="${AAOS_APPLICATION_ID}" \
+            -Papp.appLabel="${APP_LABEL}" \
+            -Papp.aaosAppLabel="${AAOS_APP_LABEL}" \
+            -Psigning.storeFile="${SIGNING_STORE_FILE}" \
+            -Psigning.storePassword="${{ secrets.MOSSYFIN_KEYSTORE_PASSWORD }}" \
+            -Psigning.keyAlias="${{ secrets.MOSSYFIN_KEY_ALIAS }}" \
+            -Psigning.keyPassword="${{ secrets.MOSSYFIN_KEY_PASSWORD }}" \
+            -Pandroid.injected.signing.store.file="${SIGNING_STORE_FILE}" \
+            -Pandroid.injected.signing.store.password="${{ secrets.MOSSYFIN_KEYSTORE_PASSWORD }}" \
+            -Pandroid.injected.signing.key.alias="${{ secrets.MOSSYFIN_KEY_ALIAS }}" \
+            -Pandroid.injected.signing.key.password="${{ secrets.MOSSYFIN_KEY_PASSWORD }}"
+
+      - name: Upload AAOS bundle artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: mossyfin-aaos-bundle
+          retention-days: 14
+          if-no-files-found: error
+          path: ${{ env.AAOS_BUNDLE_DIR }}/*.aab
+
+      - name: Upload to Google Play internal testing
+        if: >-
+          (github.event_name == 'push' ||
+           (github.event_name == 'workflow_dispatch' && inputs.upload_to_play))
+        uses: r0adkll/upload-google-play@v1.1.3
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: ${{ env.AAOS_APPLICATION_ID }}
+          releaseFiles: ${{ env.AAOS_BUNDLE_DIR }}/*.aab
+          track: internal
+          status: completed
