@@ -31,13 +31,20 @@ android {
     namespace = "org.jellyfin.mobile"
     compileSdk = 36
 
+    val baseApplicationId = findProperty("app.applicationId")?.toString() ?: "com.blazelink.mossyfin"
+    val baseAppLabel = findProperty("app.appLabel")?.toString() ?: "Mossyfin"
+    val aaosApplicationId = findProperty("app.aaosApplicationId")?.toString() ?: "$baseApplicationId.aaos"
+    val aaosAppLabel = findProperty("app.aaosAppLabel")?.toString() ?: baseAppLabel
+
     defaultConfig {
+        applicationId = baseApplicationId
         minSdk = 21
         targetSdk = 36
         versionName = project.getVersionName()
         versionCode = getVersionCode(versionName!!)
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
+        manifestPlaceholders["appLabel"] = baseAppLabel
     }
 
     val releaseSigningConfig = SigningHelper.loadSigningConfig(project)?.let { config ->
@@ -65,8 +72,19 @@ android {
         }
     }
 
-    flavorDimensions += "variant"
+    flavorDimensions += listOf("target", "variant")
     productFlavors {
+        register("mobile") {
+            dimension = "target"
+            applicationId = baseApplicationId
+            isDefault = true
+        }
+        register("aaos") {
+            dimension = "target"
+            applicationId = aaosApplicationId
+            versionNameSuffix = "-aaos"
+            manifestPlaceholders["appLabel"] = aaosAppLabel
+        }
         register("libre") {
             dimension = "variant"
             buildConfigField("boolean", "IS_PROPRIETARY", "false")
@@ -108,7 +126,7 @@ android {
     }
 }
 
-base.archivesName.set("jellyfin-android-v${project.getVersionName()}")
+base.archivesName.set("mossyfin-v${project.getVersionName()}")
 
 dependencies {
     val proprietaryImplementation by configurations
