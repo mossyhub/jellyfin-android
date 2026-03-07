@@ -5,7 +5,7 @@ on:
     branches:
       - mossyfin-aaos
   schedule:
-    - cron: '17 * * * *'
+    - cron: '17 17 * * 1'
   workflow_dispatch:
     inputs:
       upload_to_play:
