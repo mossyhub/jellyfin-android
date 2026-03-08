@@ -245,18 +245,46 @@ jobs:
           echo "Play release status: draft"
           echo "Workflow SHA: $GITHUB_SHA"
 
+      - name: Install Fastlane
+        if: >-
+          (github.event_name == 'push' ||
+           github.event_name == 'schedule' ||
+           (github.event_name == 'workflow_dispatch' && inputs.upload_to_play))
+        run: gem install fastlane --no-document
+
       - name: Upload to Google Play internal testing
         if: >-
           (github.event_name == 'push' ||
            github.event_name == 'schedule' ||
            (github.event_name == 'workflow_dispatch' && inputs.upload_to_play))
-        uses: r0adkll/upload-google-play@v1.1.3
-        with:
-          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
-          packageName: ${{ env.AAOS_APPLICATION_ID }}
-          releaseFiles: ${{ env.AAOS_BUNDLE_DIR }}/*.aab
-          track: internal
-          status: draft
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          bundles=("${AAOS_BUNDLE_DIR}"/*.aab)
+          if [ "${#bundles[@]}" -ne 1 ]; then
+            echo "Expected exactly one AAB in ${AAOS_BUNDLE_DIR}, found ${#bundles[@]}"
+            exit 1
+          fi
+
+          JSON_KEY_PATH="$RUNNER_TEMP/google-play-service-account.json"
+          printf '%s' "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" > "$JSON_KEY_PATH"
+
+          fastlane supply \
+            --aab "${bundles[0]}" \
+            --track internal \
+            --release_status draft \
+            --package_name "$AAOS_APPLICATION_ID" \
+            --json_key "$JSON_KEY_PATH" \
+            --skip_upload_metadata true \
+            --skip_upload_images true \
+            --skip_upload_screenshots true \
+            --skip_upload_changelogs true \
+            --changes_not_sent_for_review false \
+            --timeout 300
 
       - name: Write build summary
         if: always()
@@ -268,6 +296,7 @@ jobs:
             echo "- Branch: ${{ github.event_name == 'schedule' && env.TARGET_BRANCH || github.ref_name }}"
             echo "- Bundle path: ${AAOS_BUNDLE_DIR}/*.aab"
             echo '- Play release status: draft'
+            echo '- Play uploader: fastlane supply'
             if [ "${{ github.event_name }}" = 'workflow_dispatch' ] && [ "${{ inputs.upload_to_play }}" != 'true' ]; then
               echo '- Play upload: skipped by manual input'
             else
