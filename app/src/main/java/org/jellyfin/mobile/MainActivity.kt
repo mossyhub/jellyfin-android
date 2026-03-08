@@ -26,8 +26,11 @@ import org.jellyfin.mobile.events.ActivityEventHandler
 import org.jellyfin.mobile.player.cast.Chromecast
 import org.jellyfin.mobile.player.cast.IChromecast
 import org.jellyfin.mobile.player.ui.PlayerFragment
+import org.jellyfin.mobile.ui.ParkedModeFragment
 import org.jellyfin.mobile.setup.ConnectFragment
 import org.jellyfin.mobile.utils.AndroidVersion
+import org.jellyfin.mobile.utils.AutomotiveUxRestrictionsMonitor
+import org.jellyfin.mobile.utils.AutomotiveUxRestrictionsState
 import org.jellyfin.mobile.utils.BackPressInterceptor
 import org.jellyfin.mobile.utils.BluetoothPermissionHelper
 import org.jellyfin.mobile.utils.Constants
@@ -48,9 +51,17 @@ class MainActivity : AppCompatActivity() {
     val bluetoothPermissionHelper: BluetoothPermissionHelper = BluetoothPermissionHelper(this, get())
     val chromecast: IChromecast = Chromecast()
     private val permissionRequestHelper: PermissionRequestHelper by inject()
+    private val automotiveUxRestrictionsMonitor: AutomotiveUxRestrictionsMonitor by lazy {
+        AutomotiveUxRestrictionsMonitor(this) { isParked ->
+            runOnUiThread {
+                handleParkedModeChanged(isParked)
+            }
+        }
+    }
 
     var serviceBinder: RemotePlayerService.ServiceBinder? = null
         private set
+    private var isServiceBound = false
     private val serviceConnection: ServiceConnection = object : ServiceConnection {
         override fun onServiceConnected(componentName: ComponentName, binder: IBinder) {
             serviceBinder = binder as? RemotePlayerService.ServiceBinder
@@ -103,28 +114,12 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Check WebView support
-        if (!isWebViewSupported()) {
-            AlertDialog.Builder(this).apply {
-                setTitle(R.string.dialog_web_view_not_supported)
-                setMessage(R.string.dialog_web_view_not_supported_message)
-                setCancelable(false)
-                if (AndroidVersion.isAtLeastN) {
-                    setNeutralButton(R.string.dialog_button_open_settings) { _, _ ->
-                        startActivity(Intent(Settings.ACTION_WEBVIEW_SETTINGS))
-                        Toast.makeText(context, R.string.toast_reopen_after_change, Toast.LENGTH_LONG).show()
-                        finishAfterTransition()
-                    }
-                }
-                setNegativeButton(R.string.dialog_button_close_app) { _, _ ->
-                    finishAfterTransition()
-                }
-            }.show()
-            return
-        }
+        automotiveUxRestrictionsMonitor.start()
+
+        if (AutomotiveUxRestrictionsState.isInteractionAllowed(this) && !ensureWebViewSupport()) return
 
         // Bind player service
-        bindService(Intent(this, RemotePlayerService::class.java), serviceConnection, Service.BIND_AUTO_CREATE)
+        isServiceBound = bindService(Intent(this, RemotePlayerService::class.java), serviceConnection, Service.BIND_AUTO_CREATE)
 
         // Subscribe to activity events
         with(activityEventHandler) { subscribe() }
@@ -151,6 +146,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleServerState(state: ServerState) {
+        if (!AutomotiveUxRestrictionsState.isInteractionAllowed(this)) {
+            showParkedModeFragment()
+            return
+        }
+
         with(supportFragmentManager) {
             val currentFragment = findFragmentById(R.id.fragment_container)
             when (state) {
@@ -173,6 +173,58 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    private fun handleParkedModeChanged(isParked: Boolean) {
+        if (!AutomotiveUxRestrictionsState.isAutomotive(this)) return
+
+        if (!isParked) {
+            pausePlaybackForDrivingRestrictions()
+            showParkedModeFragment()
+            return
+        }
+
+        if (ensureWebViewSupport()) {
+            handleServerState(mainViewModel.serverState.value)
+        }
+    }
+
+    private fun pausePlaybackForDrivingRestrictions() {
+        serviceBinder?.pausePlayback()
+        supportFragmentManager.fragments.forEach { fragment ->
+            if (fragment is PlayerFragment && fragment.isVisible) {
+                fragment.pauseForDrivingRestrictions()
+            }
+        }
+    }
+
+    private fun showParkedModeFragment() {
+        val currentFragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
+        if (currentFragment !is ParkedModeFragment) {
+            supportFragmentManager.replaceFragment<ParkedModeFragment>()
+        }
+    }
+
+    private fun ensureWebViewSupport(): Boolean {
+        if (isWebViewSupported()) return true
+
+        AlertDialog.Builder(this).apply {
+            setTitle(R.string.dialog_web_view_not_supported)
+            setMessage(R.string.dialog_web_view_not_supported_message)
+            setCancelable(false)
+            if (AndroidVersion.isAtLeastN) {
+                setNeutralButton(R.string.dialog_button_open_settings) { _, _ ->
+                    startActivity(Intent(Settings.ACTION_WEBVIEW_SETTINGS))
+                    Toast.makeText(context, R.string.toast_reopen_after_change, Toast.LENGTH_LONG).show()
+                    finishAfterTransition()
+                }
+            }
+            setNegativeButton(R.string.dialog_button_close_app) { _, _ ->
+                finishAfterTransition()
+            }
+        }.show()
+
+        return false
     }
 
     override fun onRequestPermissionsResult(
@@ -205,7 +257,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        unbindService(serviceConnection)
+        automotiveUxRestrictionsMonitor.stop()
+        if (isServiceBound) {
+            unbindService(serviceConnection)
+            isServiceBound = false
+        }
         chromecast.destroy()
         super.onDestroy()
     }

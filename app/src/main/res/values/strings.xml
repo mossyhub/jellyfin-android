@@ -50,6 +50,8 @@
     <string name="media_service_car_section_genres">Genres</string>
     <string name="media_service_car_section_playlists">Playlists</string>
     <string name="media_service_car_item_no_title">No title</string>
+    <string name="aaos_parked_only_title">Unavailable while driving</string>
+    <string name="aaos_parked_only_message">This app is only available while the vehicle is parked.</string>
 
     <string name="music_notification_channel">Jellyfin Music Player</string>
     <string name="music_notification_channel_description">Used for music playback controls</string>

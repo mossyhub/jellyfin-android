@@ -18,6 +18,7 @@ import org.jellyfin.mobile.downloads.DownloadsFragment
 import org.jellyfin.mobile.player.ui.PlayerFragment
 import org.jellyfin.mobile.player.ui.PlayerFullscreenHelper
 import org.jellyfin.mobile.settings.SettingsFragment
+import org.jellyfin.mobile.utils.AutomotiveUxRestrictionsState
 import org.jellyfin.mobile.utils.Constants
 import org.jellyfin.mobile.utils.extensions.addFragment
 import org.jellyfin.mobile.utils.removeDownload
@@ -45,6 +46,10 @@ class ActivityEventHandler(
 
     @Suppress("CyclomaticComplexMethod", "LongMethod")
     private fun MainActivity.handleEvent(event: ActivityEvent) {
+        if (!AutomotiveUxRestrictionsState.isInteractionAllowed(this) && event !is ActivityEvent.ExitApp) {
+            return
+        }
+
         when (event) {
             is ActivityEvent.ChangeFullscreen -> {
                 val fullscreenHelper = PlayerFullscreenHelper(window)

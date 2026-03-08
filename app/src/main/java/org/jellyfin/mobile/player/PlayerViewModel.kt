@@ -49,6 +49,7 @@ import org.jellyfin.mobile.player.ui.DecoderType
 import org.jellyfin.mobile.player.ui.DisplayPreferences
 import org.jellyfin.mobile.player.ui.PlayState
 import org.jellyfin.mobile.player.ui.playermenuhelper.PlayerMenuHelper
+import org.jellyfin.mobile.utils.AutomotiveUxRestrictionsState
 import org.jellyfin.mobile.utils.Constants
 import org.jellyfin.mobile.utils.Constants.SUPPORTED_VIDEO_PLAYER_PLAYBACK_ACTIONS
 import org.jellyfin.mobile.utils.applyDefaultAudioAttributes
@@ -215,6 +216,14 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application),
                 }
             }
         }
+
+        viewModelScope.launch {
+            AutomotiveUxRestrictionsState.isParkedFlow.collect { isParked ->
+                if (AutomotiveUxRestrictionsState.isAutomotive(getApplication()) && !isParked) {
+                    pause()
+                }
+            }
+        }
     }
 
     private fun buildAnalyticsCollector() = DefaultAnalyticsCollector(Clock.DEFAULT).apply {
@@ -296,7 +305,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application),
 
         applyMediaSegments(jellyfinMediaSource)
 
-        player.playWhenReady = playWhenReady
+        player.playWhenReady = playWhenReady && AutomotiveUxRestrictionsState.isInteractionAllowed(getApplication())
 
         mediaSession.setMetadata(jellyfinMediaSource.toMediaMetadata())
 
@@ -543,6 +552,11 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application),
 
     // Player controls
     fun play() {
+        if (!AutomotiveUxRestrictionsState.isInteractionAllowed(getApplication())) {
+            pause()
+            return
+        }
+
         playerOrNull?.play()
     }
 
