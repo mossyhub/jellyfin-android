@@ -28,6 +28,7 @@ env:
   APP_LABEL: Mossyfin
   AAOS_APP_LABEL: Mossyfin
   AAOS_BUNDLE_DIR: app/build/outputs/bundle/aaosProprietaryRelease
+  PLAY_RELEASE_STATUS: draft
   TARGET_BRANCH: mossyfin-aaos
   UPSTREAM_REPOSITORY: https://github.com/jellyfin/jellyfin-android.git
   UPSTREAM_BRANCH: master
@@ -246,7 +247,7 @@ jobs:
           packageName: ${{ env.AAOS_APPLICATION_ID }}
           releaseFiles: ${{ env.AAOS_BUNDLE_DIR }}/*.aab
           track: internal
-          status: completed
+          status: ${{ env.PLAY_RELEASE_STATUS }}
 
       - name: Write build summary
         if: always()
@@ -257,6 +258,7 @@ jobs:
             echo "- Version: ${JELLYFIN_VERSION}"
             echo "- Branch: ${{ github.event_name == 'schedule' && env.TARGET_BRANCH || github.ref_name }}"
             echo "- Bundle path: ${AAOS_BUNDLE_DIR}/*.aab"
+            echo "- Play release status: ${PLAY_RELEASE_STATUS}"
             if [ "${{ github.event_name }}" = 'workflow_dispatch' ] && [ "${{ inputs.upload_to_play }}" != 'true' ]; then
               echo '- Play upload: skipped by manual input'
             else
