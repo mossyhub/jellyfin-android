@@ -245,6 +245,15 @@ jobs:
           echo "Play release status: draft"
           echo "Workflow SHA: $GITHUB_SHA"
 
+      - name: Setup Ruby
+        if: >-
+          (github.event_name == 'push' ||
+           github.event_name == 'schedule' ||
+           (github.event_name == 'workflow_dispatch' && inputs.upload_to_play))
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+
       - name: Install Fastlane
         if: >-
           (github.event_name == 'push' ||
