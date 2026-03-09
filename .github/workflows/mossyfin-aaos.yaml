@@ -282,7 +282,8 @@ jobs:
           JSON_KEY_PATH="$RUNNER_TEMP/google-play-service-account.json"
           printf '%s' "$GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" > "$JSON_KEY_PATH"
 
-          fastlane supply \
+          log_path="$RUNNER_TEMP/fastlane-supply.log"
+          if ! fastlane supply \
             --aab "${bundles[0]}" \
             --track internal \
             --release_status draft \
@@ -293,7 +294,20 @@ jobs:
             --skip_upload_screenshots true \
             --skip_upload_changelogs true \
             --changes_not_sent_for_review false \
-            --timeout 300
+            --timeout 300 2>&1 | tee "$log_path"; then
+            if grep -Fq 'Only releases with status draft may be created on draft app' "$log_path"; then
+              echo '::error title=Google Play app still in draft setup::Automation is working, but Play Console still considers this app a draft app. Complete the required App Dashboard setup tasks and publish a one-time closed testing release in Play Console. After the app leaves draft state, internal-track uploads from CI will work.'
+              echo '## Google Play Upload Blocked' >> "$GITHUB_STEP_SUMMARY"
+              echo '' >> "$GITHUB_STEP_SUMMARY"
+              echo 'Google Play still considers this app a draft app.' >> "$GITHUB_STEP_SUMMARY"
+              echo '' >> "$GITHUB_STEP_SUMMARY"
+              echo 'Required one-time manual unblock in Play Console:' >> "$GITHUB_STEP_SUMMARY"
+              echo '1. Complete all mandatory setup tasks on the App Dashboard.' >> "$GITHUB_STEP_SUMMARY"
+              echo '2. Create and publish a closed testing release once so the app leaves draft state.' >> "$GITHUB_STEP_SUMMARY"
+              echo '3. After that, this workflow can upload to the internal track automatically.' >> "$GITHUB_STEP_SUMMARY"
+            fi
+            exit 1
+          fi
 
       - name: Write build summary
         if: always()
