@@ -5,6 +5,26 @@
         android:name="android.hardware.type.automotive"
         android:required="true" />
 
+    <!-- Opt out of implicit hardware features that AAOS head units may not report.
+         Without these the system package manager silently filters the app out of the
+         launcher, Settings "Open" button, and Play Store "Open" button. -->
+    <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.screen.portrait"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.screen.landscape"
+        android:required="false" />
+    <!-- Implied by ACCESS_WIFI_STATE / BLUETOOTH permissions in the main manifest -->
+    <uses-feature
+        android:name="android.hardware.wifi"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.bluetooth"
+        android:required="false" />
+
     <application android:appCategory="video">
         <meta-data
             android:name="com.google.android.gms.car.application"
