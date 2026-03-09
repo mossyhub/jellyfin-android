@@ -5,7 +5,13 @@
         android:name="android.hardware.type.automotive"
         android:required="true" />
 
-    <application>
+    <application android:appCategory="video">
+        <meta-data
+            android:name="com.google.android.gms.car.application"
+            tools:node="remove" />
+        <meta-data
+            android:name="com.google.android.gms.car.notification.SmallIcon"
+            tools:node="remove" />
         <activity
             android:name=".MainActivity"
             android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|keyboard|keyboardHidden|navigation|uiMode"
@@ -15,7 +21,7 @@
             tools:node="replace">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.CAR_LAUNCHER" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
     </application>
