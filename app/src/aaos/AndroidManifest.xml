@@ -18,13 +18,5 @@
                 <category android:name="android.intent.category.CAR_LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <meta-data
-            android:name="com.google.android.gms.car.application"
-            tools:node="remove" />
-
-        <meta-data
-            android:name="com.google.android.gms.car.notification.SmallIcon"
-            tools:node="remove" />
     </application>
 </manifest>
