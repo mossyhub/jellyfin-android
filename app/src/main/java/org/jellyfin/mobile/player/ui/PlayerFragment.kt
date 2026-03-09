@@ -40,7 +40,6 @@ import org.jellyfin.mobile.player.PlayerViewModel
 import org.jellyfin.mobile.player.interaction.PlayOptions
 import org.jellyfin.mobile.player.ui.playermenuhelper.PlayerMenuHelper
 import org.jellyfin.mobile.utils.AndroidVersion
-import org.jellyfin.mobile.utils.AutomotiveUxRestrictionsState
 import org.jellyfin.mobile.utils.BackPressInterceptor
 import org.jellyfin.mobile.utils.Constants
 import org.jellyfin.mobile.utils.Constants.DEFAULT_CONTROLS_TIMEOUT_MS
@@ -361,16 +360,11 @@ class PlayerFragment : Fragment(), BackPressInterceptor {
     fun onUserLeaveHint() {
         if (
             AndroidVersion.isAtLeastN &&
-            !AutomotiveUxRestrictionsState.isAutomotive(requireContext()) &&
             requireActivity().packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE) &&
             viewModel.playerOrNull?.isPlaying == true
         ) {
             requireActivity().enterPictureInPicture()
         }
-    }
-
-    fun pauseForDrivingRestrictions() {
-        viewModel.pause()
     }
 
     @Suppress("NestedBlockDepth")

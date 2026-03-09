@@ -26,11 +26,8 @@ import org.jellyfin.mobile.events.ActivityEventHandler
 import org.jellyfin.mobile.player.cast.Chromecast
 import org.jellyfin.mobile.player.cast.IChromecast
 import org.jellyfin.mobile.player.ui.PlayerFragment
-import org.jellyfin.mobile.ui.ParkedModeFragment
 import org.jellyfin.mobile.setup.ConnectFragment
 import org.jellyfin.mobile.utils.AndroidVersion
-import org.jellyfin.mobile.utils.AutomotiveUxRestrictionsMonitor
-import org.jellyfin.mobile.utils.AutomotiveUxRestrictionsState
 import org.jellyfin.mobile.utils.BackPressInterceptor
 import org.jellyfin.mobile.utils.BluetoothPermissionHelper
 import org.jellyfin.mobile.utils.Constants
@@ -51,13 +48,6 @@ class MainActivity : AppCompatActivity() {
     val bluetoothPermissionHelper: BluetoothPermissionHelper = BluetoothPermissionHelper(this, get())
     val chromecast: IChromecast = Chromecast()
     private val permissionRequestHelper: PermissionRequestHelper by inject()
-    private val automotiveUxRestrictionsMonitor: AutomotiveUxRestrictionsMonitor by lazy {
-        AutomotiveUxRestrictionsMonitor(this) { isParked ->
-            runOnUiThread {
-                handleParkedModeChanged(isParked)
-            }
-        }
-    }
 
     var serviceBinder: RemotePlayerService.ServiceBinder? = null
         private set
@@ -114,9 +104,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        automotiveUxRestrictionsMonitor.start()
-
-        if (AutomotiveUxRestrictionsState.isInteractionAllowed(this) && !ensureWebViewSupport()) return
+        if (!ensureWebViewSupport()) return
 
         // Bind player service
         isServiceBound = bindService(Intent(this, RemotePlayerService::class.java), serviceConnection, Service.BIND_AUTO_CREATE)
@@ -146,11 +134,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleServerState(state: ServerState) {
-        if (!AutomotiveUxRestrictionsState.isInteractionAllowed(this)) {
-            showParkedModeFragment()
-            return
-        }
-
         with(supportFragmentManager) {
             val currentFragment = findFragmentById(R.id.fragment_container)
             when (state) {
@@ -172,36 +155,6 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
-        }
-    }
-
-    private fun handleParkedModeChanged(isParked: Boolean) {
-        if (!AutomotiveUxRestrictionsState.isAutomotive(this)) return
-
-        if (!isParked) {
-            pausePlaybackForDrivingRestrictions()
-            showParkedModeFragment()
-            return
-        }
-
-        if (ensureWebViewSupport()) {
-            handleServerState(mainViewModel.serverState.value)
-        }
-    }
-
-    private fun pausePlaybackForDrivingRestrictions() {
-        serviceBinder?.pausePlayback()
-        supportFragmentManager.fragments.forEach { fragment ->
-            if (fragment is PlayerFragment && fragment.isVisible) {
-                fragment.pauseForDrivingRestrictions()
-            }
-        }
-    }
-
-    private fun showParkedModeFragment() {
-        val currentFragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
-        if (currentFragment !is ParkedModeFragment) {
-            supportFragmentManager.replaceFragment<ParkedModeFragment>()
         }
     }
 
@@ -257,7 +210,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        automotiveUxRestrictionsMonitor.stop()
         if (isServiceBound) {
             unbindService(serviceConnection)
             isServiceBound = false

@@ -37,8 +37,6 @@ import org.jellyfin.mobile.MainActivity
 import org.jellyfin.mobile.R
 import org.jellyfin.mobile.app.AppPreferences
 import org.jellyfin.mobile.utils.AndroidVersion
-import org.jellyfin.mobile.utils.AutomotiveUxRestrictionsMonitor
-import org.jellyfin.mobile.utils.AutomotiveUxRestrictionsState
 import org.jellyfin.mobile.utils.Constants
 import org.jellyfin.mobile.utils.Constants.EXTRA_ALBUM
 import org.jellyfin.mobile.utils.Constants.EXTRA_ARTIST
@@ -82,13 +80,6 @@ class RemotePlayerService : Service(), CoroutineScope {
     private val webappFunctionChannel: WebappFunctionChannel by inject()
     private val remoteVolumeProvider: RemoteVolumeProvider by inject()
     private lateinit var wakeLock: PowerManager.WakeLock
-    private val automotiveUxRestrictionsMonitor: AutomotiveUxRestrictionsMonitor by lazy {
-        AutomotiveUxRestrictionsMonitor(this) { isParked ->
-            if (!isParked) {
-                pausePlaybackForDrivingRestrictions()
-            }
-        }
-    }
 
     private var mediaSession: MediaSession? = null
     private var mediaController: MediaController? = null
@@ -146,7 +137,6 @@ class RemotePlayerService : Service(), CoroutineScope {
 
         // Create notification channel
         createMediaNotificationChannel(notificationManager)
-        automotiveUxRestrictionsMonitor.start()
     }
 
     override fun onBind(intent: Intent): IBinder {
@@ -183,10 +173,6 @@ class RemotePlayerService : Service(), CoroutineScope {
         val action = intent.action
         if (action == Constants.ACTION_REPORT) {
             notify(intent)
-            return
-        }
-        if (action == Constants.ACTION_PLAY && !AutomotiveUxRestrictionsState.isInteractionAllowed(applicationContext)) {
-            pausePlaybackForDrivingRestrictions()
             return
         }
         val transportControls = mediaController?.transportControls ?: return
@@ -427,11 +413,6 @@ class RemotePlayerService : Service(), CoroutineScope {
                 @SuppressLint("MissingOnPlayFromSearch")
                 object : MediaSession.Callback() {
                     override fun onPlay() {
-                        if (!AutomotiveUxRestrictionsState.isInteractionAllowed(applicationContext)) {
-                            pausePlaybackForDrivingRestrictions()
-                            return
-                        }
-
                         webappFunctionChannel.callPlaybackManagerAction(PLAYBACK_MANAGER_COMMAND_PLAY)
                     }
 
@@ -482,24 +463,13 @@ class RemotePlayerService : Service(), CoroutineScope {
     override fun onDestroy() {
         unregisterReceiver(receiver)
         job.cancel()
-        automotiveUxRestrictionsMonitor.stop()
         mediaSession?.release()
         mediaSession = null
         super.onDestroy()
     }
 
-    private fun pausePlaybackForDrivingRestrictions() {
-        if (playbackState?.state == PlaybackState.STATE_PLAYING) {
-            webappFunctionChannel.callPlaybackManagerAction(PLAYBACK_MANAGER_COMMAND_PAUSE)
-        }
-    }
-
     class ServiceBinder(private val service: RemotePlayerService) : Binder() {
         val isPlaying: Boolean
             get() = service.playbackState?.state == PlaybackState.STATE_PLAYING
-
-        fun pausePlayback() {
-            service.pausePlaybackForDrivingRestrictions()
-        }
     }
 }
