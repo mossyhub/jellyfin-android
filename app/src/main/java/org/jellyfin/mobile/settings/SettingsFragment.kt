@@ -2,12 +2,12 @@ package org.jellyfin.mobile.settings
 
 import android.content.Intent
 import android.os.Bundle
-import android.os.Environment
 import android.provider.Settings
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import de.Maxr1998.modernpreferences.Preference
 import de.Maxr1998.modernpreferences.PreferencesAdapter
@@ -16,6 +16,7 @@ import de.Maxr1998.modernpreferences.helpers.checkBox
 import de.Maxr1998.modernpreferences.helpers.defaultOnCheckedChange
 import de.Maxr1998.modernpreferences.helpers.defaultOnClick
 import de.Maxr1998.modernpreferences.helpers.defaultOnSelectionChange
+import de.Maxr1998.modernpreferences.helpers.onClick
 import de.Maxr1998.modernpreferences.helpers.pref
 import de.Maxr1998.modernpreferences.helpers.screen
 import de.Maxr1998.modernpreferences.helpers.singleChoice
@@ -23,13 +24,13 @@ import de.Maxr1998.modernpreferences.preferences.CheckBoxPreference
 import de.Maxr1998.modernpreferences.preferences.choice.SelectionItem
 import org.jellyfin.mobile.R
 import org.jellyfin.mobile.app.AppPreferences
+import org.jellyfin.mobile.app.StorageManager
 import org.jellyfin.mobile.databinding.FragmentSettingsBinding
 import org.jellyfin.mobile.downloads.DownloadMethod
 import org.jellyfin.mobile.utils.BackPressInterceptor
 import org.jellyfin.mobile.utils.Constants
 import org.jellyfin.mobile.utils.applyWindowInsetsAsMargins
 import org.jellyfin.mobile.utils.extensions.requireMainActivity
-import org.jellyfin.mobile.utils.getDownloadsPaths
 import org.jellyfin.mobile.utils.isPackageInstalled
 import org.jellyfin.mobile.utils.withThemedContext
 import org.koin.android.ext.android.inject
@@ -37,14 +38,31 @@ import org.koin.android.ext.android.inject
 class SettingsFragment : Fragment(), BackPressInterceptor {
 
     private val appPreferences: AppPreferences by inject()
+    private val storageManager: StorageManager by inject()
+
+    private val storageLocationPicker = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) {
+            val changed = storageManager.changeStorageLocation(uri)
+
+            // Update preference
+            if (changed && ::downloadLocationPreference.isInitialized) {
+                downloadLocationPreference.summary = storageManager.getStorageLocation()?.name
+                downloadLocationPreference.requestRebindAndHighlight()
+            }
+        }
+    }
+
     private val settingsAdapter: PreferencesAdapter by lazy { PreferencesAdapter(buildSettingsScreen()) }
     private lateinit var startLandscapeVideoInLandscapePreference: CheckBoxPreference
     private lateinit var swipeGesturesPreference: CheckBoxPreference
     private lateinit var pressSpeedUpPreference: CheckBoxPreference
     private lateinit var rememberBrightnessPreference: Preference
     private lateinit var backgroundAudioPreference: Preference
+    private lateinit var horizontalGesturePreference: Preference
     private lateinit var directPlayAssPreference: Preference
+    private lateinit var networkBufferPreference: Preference
     private lateinit var externalPlayerChoicePreference: Preference
+    private lateinit var downloadLocationPreference: Preference
 
     init {
         Preference.Config.titleMaxLines = 2
@@ -108,7 +126,9 @@ class SettingsFragment : Fragment(), BackPressInterceptor {
                 rememberBrightnessPreference.enabled = selection == VideoPlayerType.EXO_PLAYER && swipeGesturesPreference.checked
                 pressSpeedUpPreference.enabled = selection == VideoPlayerType.EXO_PLAYER
                 backgroundAudioPreference.enabled = selection == VideoPlayerType.EXO_PLAYER
+                horizontalGesturePreference.enabled = selection == VideoPlayerType.EXO_PLAYER
                 directPlayAssPreference.enabled = selection == VideoPlayerType.EXO_PLAYER
+                networkBufferPreference.enabled = selection == VideoPlayerType.EXO_PLAYER
                 externalPlayerChoicePreference.enabled = selection == VideoPlayerType.EXTERNAL_PLAYER
             }
         }
@@ -142,9 +162,37 @@ class SettingsFragment : Fragment(), BackPressInterceptor {
             summaryRes = R.string.pref_exoplayer_allow_background_audio_summary
             enabled = appPreferences.videoPlayerType == VideoPlayerType.EXO_PLAYER
         }
+        horizontalGesturePreference = checkBox(Constants.PREF_EXOPLAYER_ALLOW_HORIZONTAL_GESTURE) {
+            titleRes = R.string.pref_exoplayer_allow_horizontal_gesture
+            summaryRes = R.string.pref_exoplayer_allow_horizontal_gesture_summary
+            enabled = appPreferences.videoPlayerType == VideoPlayerType.EXO_PLAYER
+            defaultValue = true
+        }
         directPlayAssPreference = checkBox(Constants.PREF_EXOPLAYER_DIRECT_PLAY_ASS) {
             titleRes = R.string.pref_exoplayer_direct_play_ass
             summaryRes = R.string.pref_exoplayer_direct_play_ass_summary
+            enabled = appPreferences.videoPlayerType == VideoPlayerType.EXO_PLAYER
+        }
+        val networkBufferOptions = listOf(
+            SelectionItem(
+                Constants.NETWORK_BUFFER_AUTO,
+                R.string.network_buffer_auto,
+                R.string.network_buffer_auto_description,
+            ),
+            SelectionItem(
+                Constants.NETWORK_BUFFER_LARGE,
+                R.string.network_buffer_large,
+                R.string.network_buffer_large_description,
+            ),
+            SelectionItem(
+                Constants.NETWORK_BUFFER_EXTRA_LARGE,
+                R.string.network_buffer_extra_large,
+                R.string.network_buffer_extra_large_description,
+            ),
+        )
+        networkBufferPreference = singleChoice(Constants.PREF_EXOPLAYER_NETWORK_BUFFER, networkBufferOptions) {
+            titleRes = R.string.pref_exoplayer_network_buffer
+            initialSelection = Constants.NETWORK_BUFFER_AUTO
             enabled = appPreferences.videoPlayerType == VideoPlayerType.EXO_PLAYER
         }
 
@@ -210,17 +258,17 @@ class SettingsFragment : Fragment(), BackPressInterceptor {
 
         val downloadMethods = listOf(
             SelectionItem(
-                DownloadMethod.WIFI_ONLY,
+                DownloadMethod.WIFI_ONLY.intValue,
                 R.string.wifi_only,
                 R.string.wifi_only_summary,
             ),
             SelectionItem(
-                DownloadMethod.MOBILE_DATA,
+                DownloadMethod.MOBILE_DATA.intValue,
                 R.string.mobile_data,
                 R.string.mobile_data_summary,
             ),
             SelectionItem(
-                DownloadMethod.MOBILE_AND_ROAMING,
+                DownloadMethod.MOBILE_AND_ROAMING.intValue,
                 R.string.mobile_data_and_roaming,
                 R.string.mobile_data_and_roaming_summary,
             ),
@@ -229,20 +277,16 @@ class SettingsFragment : Fragment(), BackPressInterceptor {
             titleRes = R.string.network_title
         }
 
-        val downloadsDirs = requireContext().getDownloadsPaths().map { path ->
-            SelectionItem(path, path, null)
-        }
-        singleChoice(Constants.PREF_DOWNLOAD_LOCATION, downloadsDirs) {
-            titleRes = R.string.pref_download_location
-            initialSelection = Environment
-                .getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-                .absolutePath
-        }
+        downloadLocationPreference = pref(Constants.PREF_STORAGE_LOCATION) {
+            val location = storageManager.getStorageLocation()
 
-        checkBox(Constants.PREF_DOWNLOAD_INTERNAL) {
-            titleRes = R.string.store_videos_in_internal_storage
-            summaryRes = R.string.stored_videos_in_internal_storage_desc
-            defaultValue = true
+            titleRes = R.string.pref_download_location
+            summary = location?.name ?: getString(R.string.menu_item_none)
+
+            onClick {
+                storageLocationPicker.launch(location?.uri ?: storageManager.defaultStorageLocation)
+                false
+            }
         }
     }
 

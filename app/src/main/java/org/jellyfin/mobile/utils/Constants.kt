@@ -8,7 +8,7 @@ import org.jellyfin.mobile.BuildConfig
 @Suppress("MagicNumber")
 object Constants {
     // App Info
-    const val APP_INFO_NAME = "Jellyfin Android"
+    const val APP_INFO_NAME = "Jellyfin for Android"
     const val APP_INFO_VERSION: String = BuildConfig.VERSION_NAME
 
     // Webapp constants
@@ -38,16 +38,21 @@ object Constants {
     const val PREF_EXOPLAYER_REMEMBER_BRIGHTNESS = "pref_exoplayer_remember_brightness"
     const val PREF_EXOPLAYER_BRIGHTNESS = "pref_exoplayer_brightness"
     const val PREF_EXOPLAYER_ALLOW_BACKGROUND_AUDIO = "pref_exoplayer_allow_background_audio"
+    const val PREF_EXOPLAYER_ALLOW_HORIZONTAL_GESTURE = "pref_exoplayer_allow_horizontal_gesture"
     const val PREF_EXOPLAYER_DIRECT_PLAY_ASS = "pref_exoplayer_direct_play_ass"
+    const val PREF_EXOPLAYER_NETWORK_BUFFER = "pref_exoplayer_network_buffer"
+    const val NETWORK_BUFFER_AUTO = "auto"
+    const val NETWORK_BUFFER_LARGE = "large"
+    const val NETWORK_BUFFER_EXTRA_LARGE = "extra_large"
     const val PREF_EXTERNAL_PLAYER_APP = "pref_external_player_app"
     const val PREF_SUBTITLE_STYLE = "pref_subtitle_style"
-    const val PREF_DOWNLOAD_LOCATION = "pref_download_location"
-    const val PREF_DOWNLOAD_INTERNAL = "pref_download_internal"
+    const val PREF_STORAGE_LOCATION = "pref_storage_location"
     const val PREF_MEDIA_SEGMENT_ACTIONS = "pref_media_segment_actions"
 
     // InputManager commands
     const val PLAYBACK_MANAGER_COMMAND_PLAY = "unpause"
     const val PLAYBACK_MANAGER_COMMAND_PAUSE = "pause"
+    const val PLAYBACK_MANAGER_COMMAND_PLAY_PAUSE = "playPause"
     const val PLAYBACK_MANAGER_COMMAND_PREVIOUS = "previousTrack"
     const val PLAYBACK_MANAGER_COMMAND_NEXT = "nextTrack"
     const val PLAYBACK_MANAGER_COMMAND_REWIND = "rewind"
@@ -107,6 +112,10 @@ object Constants {
     const val DEFAULT_CONTROLS_TIMEOUT_MS = 2500
     const val SWIPE_GESTURE_EXCLUSION_SIZE_VERTICAL = 64
     const val DEFAULT_CENTER_OVERLAY_TIMEOUT_MS = 250
+    const val SWIPE_GESTURE_EXCLUSION_SIZE_HORIZONTAL = 48
+    const val HORIZONTAL_SWIPE_DISTANCE_PER_SECOND = 20 // base pixels needed to swipe for 1 second seek
+    const val SEEK_ACCELERATION_FACTOR = 2.5f // acceleration factor for non-linear seek
+    const val SEEK_ACCELERATION_FACTOR_PORTRAIT = 5.0f
     const val DISPLAY_PREFERENCES_ID_USER_SETTINGS = "usersettings"
     const val DISPLAY_PREFERENCES_CLIENT_EMBY = "emby"
     const val DISPLAY_PREFERENCES_SKIP_BACK_LENGTH = "skipBackLength"
@@ -154,5 +163,4 @@ object Constants {
     // Misc
     const val PERCENT_MAX = 100
     const val DOWNLOAD_PATH = "/MediaCache/"
-    const val DOWNLOAD_THUMBNAIL_FILENAME = "thumbnail.jpg"
 }

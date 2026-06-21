@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="network_message">Wil je downloads toestaan via mobiele data of tijdens roaming? Je provider kan hiervoor kosten in rekening brengen. Je kunt deze optie later wijzigen in de instellingen.</string>
+    <string name="network_message">Wil je downloads toestaan via mobiele gegevens of tijdens roaming? Je provider kan hiervoor kosten in rekening brengen. Je kunt deze optie later wijzigen in de instellingen.</string>
     <string name="network_title">Toegestane netwerktypen</string>
     <string name="downloading">Downloaden</string>
-    <string name="mobile_data_and_roaming">Mobiele data &amp; roaming</string>
-    <string name="mobile_data">Mobiele data</string>
-    <string name="wifi_only">Alleen op WiFi</string>
+    <string name="mobile_data_and_roaming">Mobiele gegevens &amp; roaming</string>
+    <string name="mobile_data">Mobiele gegevens</string>
+    <string name="wifi_only">Alleen wifi</string>
     <string name="battery_optimizations_message">Zet batterijoptimalisatie uit om media af te spelen wanneer het scherm uit is.</string>
     <string name="host_input_hint">Host</string>
     <string name="connect_button_text">Verbinden</string>
@@ -40,7 +40,7 @@
     <string name="video_player_web_description">De standaard HTML-videospeler van de webinterface</string>
     <string name="video_player_external">Externe speler</string>
     <string name="video_player_web">Webspeler</string>
-    <string name="pref_video_player_type_title">Videospelertype</string>
+    <string name="pref_video_player_type_title">Soort videospeler</string>
     <string name="available_servers_title">Beschikbare servers</string>
     <string name="choose_server_button_text">Server kiezen</string>
     <string name="pref_exoplayer_allow_brightness_volume_gesture">Gebaren voor helderheid en volume</string>
@@ -58,7 +58,6 @@
     <string name="music_notification_channel_description">Gebruikt voor muziekafspeelknoppen</string>
     <string name="music_notification_channel">Jellyfin-muziekspeler</string>
     <string name="media_service_car_item_no_title">Geen titel</string>
-    <string name="media_service_car_section_playlists">Afspeellijsten</string>
     <string name="media_service_car_section_genres">Genres</string>
     <string name="media_service_car_section_songs">Nummers</string>
     <string name="media_service_car_section_artists">Artiesten</string>
@@ -108,16 +107,14 @@
     <string name="bluetooth_permission_message">De app vereist Bluetooth-toegang om te detecteren of er een draadloze koptelefoon of luidspreker is aangesloten. Op Android wordt deze machtiging beschreven als \"toegang tot apparaten in de buurt\" met de waarschuwing dat deze kan worden gebruikt om de huidige locatie te achterhalen. De Jellyfin-app zal deze machtiging echter nooit met dat doel gebruiken.</string>
     <string name="bluetooth_permission_title">Bluetooth-toegang toestaan\?</string>
     <string name="bluetooth_permission_granted">Bluetooth-toestemming is verleend</string>
-    <string name="mobile_data_summary">Media zal via WiFi en mobiele netwerken worden gedownload.</string>
-    <string name="wifi_only_summary">Media zal alleen via WiFi worden gedownload.</string>
-    <string name="mobile_data_and_roaming_summary">Media zal via WiFi, mobiele- en roaming-netwerken worden gedownload.</string>
+    <string name="mobile_data_summary">Media zal via wifi en mobiele netwerken worden gedownload.</string>
+    <string name="wifi_only_summary">Media zal alleen via wifi worden gedownload.</string>
+    <string name="mobile_data_and_roaming_summary">Media zal via wifi, mobiele- en roaming-netwerken worden gedownload.</string>
     <string name="downloads">Downloads</string>
     <string name="failed_thumbnail">Miniatuur downloaden mislukt</string>
     <string name="failed_information">Media-informatie ophalen mislukt</string>
     <string name="yes">Ja</string>
     <string name="no">Nee</string>
-    <string name="confirm_deletion">Verwijderen bevestigen</string>
-    <string name="confirm_deletion_desc">Wil je \"%1$s\" verwijderen?</string>
     <string name="view_downloads">Downloads weergeven</string>
     <string name="download_notifications_description">Downloadmeldingen</string>
     <string name="thumbnail_desc">Miniatuur</string>
@@ -133,4 +130,33 @@
     <string name="pref_exoplayer_allow_press_speed_up_summary">Het scherm lang ingedrukt houden om het afspelen tijdelijk te versnellen</string>
     <string name="skip_media_segment">Overslaan</string>
     <string name="special_episode">Special</string>
+    <string name="pref_exoplayer_network_buffer">Afspeelbuffergrootte</string>
+    <string name="network_buffer_auto">Automatisch</string>
+    <string name="network_buffer_auto_description">Standaardbuffer, geschikt voor de meeste afspeelscenario\'s</string>
+    <string name="network_buffer_large">Groot</string>
+    <string name="network_buffer_large_description">Grotere buffer, kan helpen bij matige of variabele verbindingen</string>
+    <string name="network_buffer_extra_large">Extra groot</string>
+    <string name="network_buffer_extra_large_description">Maximale buffer, bedoeld voor langzame of satellietverbindingen</string>
+    <string name="media_service_unknown_page">Onbekende pagina</string>
+    <string name="media_service_no_items">Geen items gevonden</string>
+    <string name="media_service_invalid_id">Onbekend item-id</string>
+    <string name="media_service_car_section_favorites">Favorieten</string>
+    <string name="media_service_auth_expired">Open de app op je telefoon om je aan te melden bij je Jellyfin-server.</string>
+    <string name="media_service_car_section_audiobooks">Luisterboeken</string>
+    <string name="download_cancel">Annuleren</string>
+    <string name="download_completed">Download voltooid</string>
+    <string name="download_progress">%1$d%%</string>
+    <string name="download_remove">Download verwijderen</string>
+    <string name="download_remove_keep_local">Lokale bestanden behouden</string>
+    <string name="download_remove_description">Wil je %1$s uit je downloads verwijderen?</string>
+    <string name="download_incomplete">Download incompleet</string>
+    <string name="downloading_title">%1$s downloaden</string>
+    <string name="media_service_car_section_playlists">Afspeellijsten</string>
+    <string name="pref_exoplayer_allow_horizontal_gesture_summary">Horizontale gebaarbediening toestaan voor terug- en vooruitspoelen</string>
+    <string name="pref_exoplayer_allow_horizontal_gesture">Horizontale gebaren</string>
+    <string name="select_folder">Map selecteren</string>
+    <string name="download_settings_dialog_title">Downloadlocatie kiezen</string>
+    <string name="download_settings_dialog_message">Kies waar gedownloade media wordt opgeslagen. Downloads gebruiken standaard alleen wifi.</string>
+    <string name="downloads_empty_description">Je kunt films en series downloaden om ze offline te kunnen kijken. Zoek naar het download-icoon op de detailpagina van het item.</string>
+    <string name="downloads_empty">Nog geen downloads</string>
 </resources>
