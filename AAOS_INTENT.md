@@ -39,12 +39,30 @@ authored 2026-06. Captured by inspecting `git diff upstream/master..HEAD`.
    re-merge into whatever shape upstream uses, as long as the WebView-unsupported
    dialog still shows and early-returns.)
 
-5. **AAOS manifest + parked behavior.** `app/src/aaos/AndroidManifest.xml` provides
-   car-app metadata so the app shows a launcher entry on AAOS and behaves correctly
-   while parked. Opt out of implicit hardware `<uses-feature>` requirements that
-   would hide the launcher entry. (Upstream rarely touches `src/aaos/` — conflicts
-   here are unlikely, but if upstream adds new required features, keep the AAOS
-   launcher entry working.)
+5. **AAOS: usable WHILE DRIVING and parked (distraction-optimized) — NOT parked-only.**
+   This is the single most important behavioral invariant. The whole point of the AAOS
+   work is that the app runs both while the car is parked AND while it is being driven.
+   `app/src/aaos/AndroidManifest.xml` declares the app distraction-optimized so AAOS
+   does not restrict it to parked use:
+     - application meta-data `com.android.automotive.application.DISTRACTION_OPTIMIZED` = `true`
+     - the MainActivity `<meta-data android:name="distractionOptimized" android:value="true"/>`
+   Both MUST remain `true`. Also keep: `uses-feature android.hardware.type.automotive
+   required=true`; the launcher/CAR_MODE/APP_MUSIC intent-filters; and `appCategory="video"`.
+   The manifest also opts implicit hardware `<uses-feature>` (touchscreen, screen
+   orientation, wifi, bluetooth) to `required="false"` so the package manager does NOT
+   filter the app out of the launcher / Settings-Open / Play-Open. Keep those opt-outs.
+
+5b. **ANTI-INVARIANT — do NOT reintroduce parked-only / driving-restriction enforcement.**
+   An earlier iteration added app-level UX-restriction gating and a parked-mode screen;
+   it was DELIBERATELY REMOVED (commit b8e95de7). These files/behaviors must STAY GONE:
+   `ParkedModeFragment.kt`, `app/src/main/res/layout/fragment_parked_mode.xml`,
+   `AutomotiveUxRestrictionsState.kt`, and any CarUxRestrictions listener wiring in
+   `RemotePlayerService` / `PlayerViewModel` / `ActivityEventHandler` / `MainActivity`
+   that blocks or blanks the UI while the car is moving. If upstream introduces an
+   equivalent "block while driving" feature, do NOT enable it for the `aaos` flavor —
+   that would defeat the drive-while-moving intent. (Note: the `PlayerFragment` PiP
+   guard in invariant #3 is unrelated to this — it's about head units lacking PiP, not
+   about driving restrictions. Keep it.)
 
 6. **Build tooling / ignores.** `.gitignore` ignores `/secrets`, `/keystore.properties`,
    `/app/bin/`, `/.gradle-local`. The `scripts/*.ps1` and the
@@ -72,5 +90,9 @@ via the `JELLYFIN_VERSION` env var (`0.0.0-dev.N` → versionCode N). Do not cha
 - [ ] PiP `FEATURE_PICTURE_IN_PICTURE` guard present in PlayerFragment.
 - [ ] `isServiceBound` guard present around `unbindService` in MainActivity.
 - [ ] App name = Mossyfin; manifest label uses `${appLabel}`.
+- [ ] AAOS distraction-optimized: `DISTRACTION_OPTIMIZED` and `distractionOptimized`
+      both `true` in `app/src/aaos/AndroidManifest.xml` (usable while driving, not parked-only).
+- [ ] Parked-only enforcement stays GONE: `git grep -l "ParkedModeFragment\|AutomotiveUxRestrictionsState"`
+      returns nothing; no CarUxRestrictions "block while moving" wiring re-added.
 - [ ] No leftover conflict markers (`git grep -nE '^(<<<<<<<|=======|>>>>>>>)'` = empty).
 - [ ] No hardcoded SDK ints reintroduced where upstream uses the catalog.
