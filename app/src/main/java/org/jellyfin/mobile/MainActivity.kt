@@ -100,6 +100,7 @@ class MainActivity : AppCompatActivity() {
         setupKoinFragmentFactory()
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
         )
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
